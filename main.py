@@ -16,8 +16,12 @@ if __name__ == '__main__':
                    [0, 9, 0,    0, 0, 0,    6, 5, 0],
                    [0, 0, 8,    0, 0, 0,    0, 3, 2],
                    [3, 0, 0,    0, 5, 0,    0, 0, 0]]
+
     start = timeit.default_timer()
-    sudoku = sudo.SudokuGrid(9,number_grid)
+    sudoku = sudo.SudokuGrid( 9, number_grid )
+
+    #actSTAGES = [1, 2, 3]
+    #sudoku.solve( active_stages = actSTAGES )
     sudoku.solve()
     stop = timeit.default_timer()
     print((stop-start)*1000, "ms")

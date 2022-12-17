@@ -1,0 +1,3 @@
+
+class AvSet(set):
+    pass

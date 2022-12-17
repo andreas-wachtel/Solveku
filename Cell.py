@@ -1,5 +1,7 @@
 UNSOLVABLE_LABEL = "Unsolvable puzzle"
 
+from AvSet import AvSet
+
 
 class Cell:
     def __init__(self, value=0, fixed=False):
@@ -8,7 +10,8 @@ class Cell:
         self.fixed = fixed
         self.av_set = None
         if not fixed:
-            self.av_set = set()
+            self.av_set = AvSet()
+            #self.av_set = set()
 
     # Returns if the cell has an associated value.
     def has_value(self):
