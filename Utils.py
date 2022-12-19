@@ -12,6 +12,7 @@ def print_grid(sudoku):
         if row % sqrt == sqrt-1:
             print("")
 
+
 def print_av_set(sudoku):
     for i in sudoku.I:
         print("Row ", i)
@@ -23,6 +24,7 @@ def print_av_set(sudoku):
                 print("{}")
         print("_____________")
 
+
 def print_data(stage_list, total_backtracks):
         return {'stage_one': stage_list.count('Stage 1'),
                 'stage_two': stage_list.count('Stage 2'),
@@ -32,3 +34,4 @@ def print_data(stage_list, total_backtracks):
                 'backtrack_prune': stage_list.count('Backtrack prune'),
                 'backtrack': stage_list.count('Backtrack'),
                 'total_backtracks': total_backtracks}
+

@@ -20,9 +20,10 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     sudoku = sudo.SudokuGrid( 9, number_grid )
 
-    #actSTAGES = [1, 2, 3]
-    #sudoku.solve( active_stages = actSTAGES )
-    sudoku.solve()
+    #actSTAGES = [1, 2]
+    actSTAGES = [1]
+    sudoku.solve( active_stages = actSTAGES )
+    #sudoku.solve()
     stop = timeit.default_timer()
     print((stop-start)*1000, "ms")
     sudoku.print()
