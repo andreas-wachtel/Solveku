@@ -7,10 +7,12 @@ class Cover:
         self.domain = [domain[i] for i in self.I]
         self.image = [image[i] for i in self.I]
 
+
     def clear(self):
         self.sub_indexes = set()
         self.sub_image = set()
         self.valid_indexes = [index for index in self.I if (self.image[index] is not None and len(self.image[index]) <= self.m)]
+
 
     def get_sub_cover(self, m):
         self.m = m
@@ -20,6 +22,7 @@ class Cover:
         else:
             return None
 
+
     def is_prunable(self, current_image):
         for image in current_image:
             for index in self.I:
@@ -27,13 +30,15 @@ class Cover:
                     return True
         return False
 
+
     def find_pair(self):
         past_images = {}
         for index in self.valid_indexes:
             if index not in  self.sub_indexes:
-                current_image = frozenset(self.image[index].union(self.sub_image))
+                #current_image = self.image[index].union(self.sub_image)
+                #raise(' define set(binset)')
+                current_image = frozenset( set(self.image[index]).union(self.sub_image))
                 if len(current_image) == self.m and current_image in past_images.keys():
-
                     self.sub_indexes.add(past_images[current_image])
                     self.sub_indexes.add(index)
                     if self.is_prunable(current_image):
@@ -45,6 +50,7 @@ class Cover:
                 else:
                     past_images[current_image] = index
         return False
+
 
     def find_sub_cover(self, cover_size):
         if cover_size == 2:

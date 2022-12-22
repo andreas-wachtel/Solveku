@@ -1,5 +1,6 @@
 import math
 from Cover import Cover
+from Cell import AvSet
 
 
 class BracketContainer:
@@ -21,6 +22,7 @@ class BracketContainer:
         self.box_image = [self.all_images[i] for i in range(2 * sudoku.n, 3 * sudoku.n)]
         self.fill_images()
 
+
     def fill_images(self):
         for i in self.I:
             self.row_image[i] = self.get_image(i)
@@ -29,6 +31,7 @@ class BracketContainer:
             self.all_images[i] = self.row_image[i]
             self.all_images[self.n + i] = self.col_image[i]
             self.all_images[2 * self.n + i] = self.box_image[i]
+
 
     def row_of_box(self, box_index, cell_index):
         root = int(math.sqrt(self.n))
@@ -54,10 +57,12 @@ class BracketContainer:
         else:
             return self.col_of_box(bracket_index - 2 * self.n, cell_index)
 
+
     def has_every_candidate(self, bracket_index, map):
         for omega in self.Omega:
             if omega not in self.all_images[bracket_index] and omega not in map.keys():
                 raise Exception("Candidate missing in bracket")
+
 
     def define_covers(self):
         self.covers = [Cover(self.I,
@@ -84,6 +89,7 @@ class BracketContainer:
         self.orthogonal_col_cover = {
             omega: Cover(self.I, [self.orthogonal_bracket_function(bracket, omega) for bracket in self.col])
             for omega in self.Omega}
+
 
     def get_image(self, index):
         res = set()

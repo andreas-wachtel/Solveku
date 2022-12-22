@@ -1,77 +1,104 @@
 import math
-from Cell import Cell
+from Cell import Cell, AvSet
 from BracketContainer import BracketContainer
 from Constants import *
+from Utils import print_grid, print_av_set
 
+import inspect  # for debugging
 
 class SudokuGrid:
 
-    # _____________________________________________________________________________________________________________
-    # __________________________________________GENERAL METHODS____________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # _____________________________GENERAL METHODS____________________________________________________
+    # ________________________________________________________________________________________________
     def __init__(self, n, number_grid):
+        
         self.stage_list = None
         self.n = n
+        self.sqrtn = int(math.sqrt(self.n))
+        AvSet.setGlobalMap(n)  # make map bin2omega
+        
         self.I = [i for i in range(n)]
         self.Omega = [i for i in range(1, n + 1)]
         self.total_backtracks = 0
         if isinstance(number_grid, SudokuGrid):
             self.grid = [[number_grid.grid[row][col].deep_copy() for col in self.I] for row in self.I]
             self.brackets = BracketContainer(self)
+            
         else:
-            self.grid = [[Cell(num, True) if num != 0 else Cell() for num in row] for row in number_grid]
-            for row in self.I:
-                for col in self.I:
-                    cell = self.grid[row][col]
-                    if not cell.has_value():
-                        if len(cell.av_set) == 0:
-                            for val in self.Omega:
-                                cell.av_set.add(val)
+            self.grid = [[Cell(num, True) if num != 0 else Cell.getFreeCell() for num in row]
+                         for row in number_grid]
             self.brackets = BracketContainer(self)
+            
+            #for locells in self.grid:
+            #    for cell in locells:
+            #        if cell.av_set is not None:
+            #            print(cell.av_set)
+            
             self.define_available_sets()
+            #print_av_set(self)
+            
 
     def define_available_sets(self):
+        """GOOD"""
         for row in self.I:
             for col in self.I:
                 cell = self.grid[row][col]
                 if not cell.has_value():
-                    for val in self.Omega:
-                        if val in self.brackets.row_image[row] or val in self.brackets.col_image[col] or val in self.brackets.box_image[self.box_of(row, col)]:
-                            cell.av_set.remove(val)
+                    image = self.brackets.row_image[row].union( 
+                        self.brackets.col_image[col], 
+                        self.brackets.box_image[self.box_of(row, col)] )
+                    for val in image:
+                        cell.av_set.remove(val)
+
 
     def box_of(self, row, col):
-        root = int(math.sqrt(self.n))
+        root = self.sqrtn
         return root*int(row/root) + int(col/root)
 
     def box_cells(self, index):
-        root = int(math.sqrt(self.n))
+        #"""USED in BracketContainer"""
+        root = self.sqrtn
         start_row = root * int(index / root)
         start_col = root * int(index % root)
         return [self.grid[start_row + i][start_col + j] for i in range(root) for j in range(root)]
 
 
-    # _____________________________________________________________________________________________________________
-    # ______________________________________ CELL  MANAGEMENT______________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # __________________________ CELL MANAGEMENT _____________________________________________________
+    # ________________________________________________________________________________________________
 
     def update_neighbors_available_set(self, row, col, num):
+        print('upd. NN ', row, col, num)
         for it in self.I:
             self.brackets.row[row][it].av_set_remove(num)
             self.brackets.col[col][it].av_set_remove(num)
-            print( self.brackets.box[self.box_of(row,col)][it].av_set, num)
             self.brackets.box[self.box_of(row,col)][it].av_set_remove(num)
+            #print('row, it, avset ', row, it, self.brackets.row[row][it].av_set)
+            #print('col, it, avset ', col, it, self.brackets.col[col][it].av_set)
+            #print('box, it, avset ', it, self.brackets.box[self.box_of(row,col)][it].av_set)
+
 
     def update_cell(self, row, col, num):
+        print('upd. CC ', row, col, num, inspect.currentframe().f_back.f_code.co_name)
+        
         self.grid[row][col].value = num
         self.grid[row][col].av_set = None
-        if num in self.brackets.row_image[row]\
-                or num in self.brackets.col_image[col] \
-                or num in self.brackets.box_image[self.box_of(row, col)]:
+        image = self.brackets.row_image[row].union( 
+                        self.brackets.col_image[col], 
+                        self.brackets.box_image[self.box_of(row, col)] )
+        if num in image:
             raise Exception("Bracket constraint violated")
         self.brackets.row_image[row].add(num)
         self.brackets.col_image[col].add(num)
         self.brackets.box_image[self.box_of(row,col)].add(num)
         self.update_neighbors_available_set(row, col, num)
+        if (row, col, num) == (3,6,2):
+            pass
+            #print('text')
+            #print_av_set(self)
+            #assert(False), 'test'
+
 
     @staticmethod
     def prune_cells(cells, values):
@@ -79,9 +106,9 @@ class SudokuGrid:
             for omega in values:
                 cell.av_set_remove(omega)
 
-    # _____________________________________________________________________________________________________________
-    # __________________________________________STAGE ONE__________________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # _______________________________ STAGE ONE ______________________________________________________
+    # ________________________________________________________________________________________________
 
     def stage_one(self):
         changes = False
@@ -90,13 +117,13 @@ class SudokuGrid:
                 cell = self.grid[row][col]
                 if not cell.has_value() and len(cell.av_set) == 1:
                     changes = True
-                    for num in cell.av_set:
-                        self.update_cell(row, col, num)
+                    num = int(cell.av_set)
+                    self.update_cell(row, col, num)
         return changes
 
-    # _____________________________________________________________________________________________________________
-    # ___________________________________________STAGE TWO_________________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # ______________________________ STAGE TWO _______________________________________________________
+    # ________________________________________________________________________________________________
 
     def stage_two(self):
         changes = False
@@ -120,26 +147,19 @@ class SudokuGrid:
                     changes = True
         return changes
 
-    # _____________________________________________________________________________________________________________
-    # ___________________________________________STAGE THREE_______________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # ______________________________ STAGE THREE _____________________________________________________
+    # ________________________________________________________________________________________________
 
-    @staticmethod
-    def root_division_split_function(n, index):
-        return int(index/math.sqrt(n))
-
-    @staticmethod
-    def root_module_split_function(n, index):
-        return int(index % math.sqrt(n))
 
     def get_target_bracket(self, root_index, target_index, root_type, target_type):
         if root_type == ROW_TYPE:
-            return self.brackets.box[self.box_of(root_index, math.sqrt(self.n)*target_index)]
+            return self.brackets.box[self.box_of(root_index, self.sqrtn*target_index)]
         elif root_type == COL_TYPE:
-            return self.brackets.box[self.box_of(math.sqrt(self.n)*target_index, root_index)]
+            return self.brackets.box[self.box_of(self.sqrtn*target_index, root_index)]
         else:
             if target_type == ROW_TYPE:
-                return self.brackets.row[self.brackets.row_of_box(root_index, math.sqrt(self.n)*target_index)]
+                return self.brackets.row[self.brackets.row_of_box(root_index, self.sqrtn*target_index)]
             else:
                 return self.brackets.col[self.brackets.col_of_box(root_index, target_index)]
 
@@ -182,12 +202,24 @@ class SudokuGrid:
                     changes = changes or prune_res
         return changes
 
+
+    #@staticmethod
+    #def root_division_split_function(n, index):
+    #    return int(index / math.sqrt(n))
+
+    #@staticmethod
+    #def root_module_split_function(n, index):
+    #    return int(index % math.sqrt(n))
+
+
     def stage_three(self):
         def division_split(index):
-            return self.root_division_split_function(self.n, index)
+            #return self.root_division_split_function(self.n, index)
+            return int(index / self.sqrtn)
 
         def module_split(index):
-            return self.root_module_split_function(self.n, index)
+            #return self.root_module_split_function(self.n, index)
+            return int(index % self.sqrtn)
 
         row_intersections = self.find_intersection(self.brackets.box, division_split, BOX_TYPE, ROW_TYPE)
         col_intersections = self.find_intersection(self.brackets.box, module_split, BOX_TYPE, COL_TYPE)
@@ -195,9 +227,9 @@ class SudokuGrid:
         box_c_intersections = self.find_intersection(self.brackets.col, division_split, COL_TYPE, BOX_TYPE)
         return row_intersections or col_intersections or box_r_intersections or box_c_intersections
 
-    # _____________________________________________________________________________________________________________
-    # ____________________________________________STAGE FOUR_______________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # ________________________________ STAGE FOUR ____________________________________________________
+    # ________________________________________________________________________________________________
 
     def define_bracket_covers(self):
         self.brackets.define_covers()
@@ -237,9 +269,9 @@ class SudokuGrid:
     def stage_four(self,m):
         return self.find_naked_subset(m) or self.find_hidden_subset(m)
 
-    # _____________________________________________________________________________________________________________
-    # ____________________________________________STAGE FIVE_______________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # _____________________________________ STAGE FIVE _______________________________________________
+    # ________________________________________________________________________________________________
     def define_orthogonal_covers(self):
         self.brackets.define_orthogonal_covers()
 
@@ -263,9 +295,11 @@ class SudokuGrid:
         return self.find_orthogonal_subset(self.brackets.orthogonal_row_cover, self.brackets.col, m, 'rows', 'cols') \
                or self.find_orthogonal_subset(self.brackets.orthogonal_col_cover, self.brackets.row, m, 'cols', 'rows')
 
-    # _____________________________________________________________________________________________________________
-    # ______________________________________BACKTRACK & HEURISTIC__________________________________________________
-    # _____________________________________________________________________________________________________________
+    
+    
+    # ________________________________________________________________________________________________
+    # _____________________________ BACKTRACK & HEURISTIC ____________________________________________
+    # ________________________________________________________________________________________________
     @staticmethod
     def xor(condition_1, condition_2):
         return (condition_1 and not condition_2) or (not condition_1 and condition_2)
@@ -279,7 +313,7 @@ class SudokuGrid:
 
     def remove_repeated_cells(self, row, col, omega, rate_list):
         # Return indexes of the box of the cell in (row, col), without the intersection with row and col.
-        root = math.sqrt(self.n)
+        root = self.sqrtn
         full_box = self.brackets.box[self.box_of(row,col)]
         repeated_cells = [full_box[index]
                           for index in self.I if self.xor(int(index/root) == row % root, index % root == col % root)]
@@ -320,9 +354,9 @@ class SudokuGrid:
                             res = [row, col, omega]
         return res
 
-    # _____________________________________________________________________________________________________________
-    # _____________________________________BACKTRACK & HEURISTIC___________________________________________________
-    # _____________________________________________________________________________________________________________
+    # ________________________________________________________________________________________________
+    # ___________________________ BACKTRACK & HEURISTIC ______________________________________________
+    # ________________________________________________________________________________________________
 
     def is_finished(self):
         for image in self.brackets.row_image:
@@ -353,13 +387,16 @@ class SudokuGrid:
                         subset_found = True
                         self.stage_list.append(STAGE_FIVE_LABEL)
                         break
+
                 if not subset_found:
                     backtrack_grid = SudokuGrid(self.n, self)
                     row, col, omega = self.find_backtracking_candidate()
+                    print('backtracking candidate ', row, col, omega)
+                    
                     backtrack_grid.update_cell(row, col, omega)
                     self.total_backtracks += 1
                     try:
-                        if backtrack_grid.solve():
+                        if backtrack_grid.solve(active_stages):
                             self.stage_list.append(BACKTRACK_LABEL)
                             self.stage_list = self.stage_list + backtrack_grid.stage_list
                             self.grid = backtrack_grid.grid
@@ -373,6 +410,7 @@ class SudokuGrid:
                     self.total_backtracks += backtrack_grid.total_backtracks
         return self.is_finished()
 
+    
     def print(self):
         for row in self.I:
             for col in self.I:

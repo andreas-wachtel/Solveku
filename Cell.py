@@ -1,7 +1,7 @@
 UNSOLVABLE_LABEL = "Unsolvable puzzle"
 
-from AvSet import AvSet
-#from binSet import binSet as AvSet
+#from AvSet import AvSet
+from binSet import binSet as AvSet
 
 
 class Cell:
@@ -16,6 +16,13 @@ class Cell:
             #self.av_set = set()
 
 
+    @classmethod
+    def getFreeCell(cls, n=9):
+        res = Cell()
+        res.av_set = AvSet.getFullAvailableSet(n)
+        return res
+
+
     def has_value(self):
         """Returns if the cell has an associated value."""
         return self.value != 0
@@ -24,12 +31,12 @@ class Cell:
     def av_set_remove(self, value):
         """Safe checks and removes a value from an available sets.
         Also checks unsolvable puzzles."""
-        if not self.has_value() and (value in self.av_set):
-            self.av_set.remove(value)
+        res = False
+        if not self.has_value():
+            res = self.av_set.myDiscard(value)
             if len(self.av_set) == 0:
                 raise Exception(UNSOLVABLE_LABEL)
-            return True
-        return False
+        return res
 
 
     def deep_copy(self):

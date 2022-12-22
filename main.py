@@ -2,6 +2,7 @@
 from Utils import print_grid, print_av_set
 import Sudoku as sudo
 import timeit
+from Constants import *
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -20,8 +21,9 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     sudoku = sudo.SudokuGrid( 9, number_grid )
 
-    #actSTAGES = [1, 2]
-    actSTAGES = [1]
+    actSTAGES = [1, 2, 3]
+    #actSTAGES = [1, 2, 3, 4, 5]
+    #actSTAGES = [STAGE_ONE_INDEX]
     sudoku.solve( active_stages = actSTAGES )
     #sudoku.solve()
     stop = timeit.default_timer()
